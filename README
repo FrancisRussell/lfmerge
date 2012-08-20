@@ -1,0 +1,15 @@
+To build, simply run:
+
+> make
+
+This program was written by Francis Russell for James Kimber. It takes
+two input files and searches for an overlap between the end of the first
+file and the start of the second. If an overlap is found, the merged
+file is optionally written out.
+
+To detect where to look for candidate overlaps, a checksum is
+incrementally applied to both files. Since this checksum must work
+backwards, it is built entirely from associate and commutative
+operators. A full comparison is performed before outputting the result.
+Making the checksum associate and commutative means it has some
+pathological worst cases, but these have not been observed in practise.

@@ -1,4 +1,4 @@
-CFLAGS=-O2 -Wall -pedantic -std=c99 -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64
+CFLAGS=-O2 -Wall -pedantic -std=c99 -D_POSIX_C_SOURCE=200112l -D_FILE_OFFSET_BITS=64
 
 all: lfmerge
 

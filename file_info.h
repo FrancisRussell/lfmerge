@@ -27,6 +27,7 @@
 
 #include <stdio.h>
 #include <assert.h>
+#include <sys/types.h>
 #include "checksum.h"
 
 static const size_t BUFFER_SIZE = 4 * 1048576;

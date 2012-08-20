@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
+#include <sys/types.h>
 
 int open_input_file(file_info_t *const info, 
                     const char *const path, 

@@ -22,21 +22,21 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef fILE_INFO_H
-#define fILE_INFO_H
+#ifndef FILE_INFO_H
+#define FILE_INFO_H
 
 #include <stdio.h>
 #include "checksum.h"
 
-static const int BUFFER_SIZE = 4 * 1048576;
+static const size_t BUFFER_SIZE = 4 * 1048576;
 
 typedef struct
 {
-  FILE *file;
-  long total_length;
-  long block_offset;
-  long internal_offset;
-  long buffer_use;
+  FILE   *file;
+  off_t  total_length;
+  off_t  block_offset;
+  size_t internal_offset;
+  size_t buffer_use;
   checksum_t checksum;
   unsigned char *buffer;
 
@@ -53,6 +53,6 @@ void advance_location(file_info_t *file);
 int validate_match(file_info_t *f1_info, file_info_t *f2_info);
 int write_merged_file(file_info_t *f1_info, file_info_t *f2_info, FILE *out);
 int find_overlap_start(file_info_t *f1_info, file_info_t *f2_info);
-long characters_handled(file_info_t *info);
+off_t characters_handled(file_info_t *info);
 
 #endif

@@ -75,8 +75,8 @@ int main(const int argc, char **const argv)
 
   if (found != 0)
   {
-    const long overlap = characters_handled(&f1_info);
-    printf("Found overlap of %li bytes at offset of %li bytes.\n", overlap, f1_info.total_length - overlap);
+    const off_t overlap = characters_handled(&f1_info);
+    printf("Found overlap of %ju bytes at offset of %ju bytes.\n", overlap, f1_info.total_length - overlap);
 
     if (argc == 4)
     {

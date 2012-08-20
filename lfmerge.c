@@ -39,7 +39,7 @@ static const int MINIMUM_OVERLAP = 1024;
 
 void usage()
 {
-  fprintf(stderr, "Usage: lfmerge file2 file2 [merged]\n\n");
+  fprintf(stderr, "Usage: lfmerge file1 file2 [merged]\n\n");
   fprintf(stderr, "%s\n\n", desc_string);
   fprintf(stderr, 
     "This build was configured for a minimum overlap of %i bytes.\n\n", 

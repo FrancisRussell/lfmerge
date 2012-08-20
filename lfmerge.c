@@ -35,7 +35,7 @@ to \"merged\", if supplied.";
 static const char *copyright = "\
 Copyright (c) 2012 Francis Russell <francis@unchartedbackwaters.co.uk>";
 
-static const int MINIMUM_OVERLAP = 1024;
+static const int OVERLAP_SIZE = 4 * 1024;
 
 void usage()
 {
@@ -43,7 +43,7 @@ void usage()
   fprintf(stderr, "%s\n\n", desc_string);
   fprintf(stderr, 
     "This build was configured for a minimum overlap of %i bytes.\n\n", 
-    MINIMUM_OVERLAP);
+    OVERLAP_SIZE);
   fprintf(stderr, "%s\n", copyright);
 }
 
@@ -62,21 +62,32 @@ int main(const int argc, char **const argv)
   }
 
   file_info_t f1_info, f2_info;
-  open_input_file(argv[1], &f1_info);
-  open_input_file(argv[2], &f2_info);
+  open_input_file(&f1_info, argv[1], OVERLAP_SIZE);
+  open_input_file(&f2_info, argv[2], OVERLAP_SIZE);
+
+  // Checksum end of first file
+  if (seek_file(&f1_info, file_length(&f1_info) - OVERLAP_SIZE))
+  {
+    while(advance_location(&f1_info));
+  }
+  else
+  {
+    fprintf(stderr, "Unable to checksum footer of first file. Probably too small.\n");
+    exit(EXIT_FAILURE);
+  }
 
   int found = 0;
-  while(!found && !hit_file_end(&f1_info) && !hit_file_end(&f2_info))
+  while(!found && !hit_file_end(&f2_info))
   {
-    found = find_overlap_start(&f1_info, &f2_info) &&
-      validate_match(&f1_info, &f2_info) &&
-      characters_handled(&f1_info) > MINIMUM_OVERLAP;
+    found = find_checksum_match(&f1_info, &f2_info) &&
+      characters_handled(&f2_info) >= OVERLAP_SIZE && 
+      validate_match(&f1_info, &f2_info);
   }
 
   if (found != 0)
   {
-    const off_t overlap = characters_handled(&f1_info);
-    printf("Found overlap of %ju bytes at offset of %ju bytes.\n", overlap, f1_info.total_length - overlap);
+    const off_t overlap_location = characters_handled(&f2_info) - OVERLAP_SIZE;
+    printf("Found overlap at offset of %ju bytes into second file.\n", overlap_location);
 
     if (argc == 4)
     {

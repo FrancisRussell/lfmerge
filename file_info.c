@@ -30,9 +30,9 @@
 #include <assert.h>
 #include <string.h>
 
-static void reverse_bytes(unsigned char *data, size_t length);
-
-int open_input_file(const char *const path, file_info_t *const info)
+int open_input_file(file_info_t *const info, 
+                    const char *const path, 
+                    const size_t checksum_length)
 {
   info->file = fopen(path, "rb");
   if (info->file == NULL)
@@ -45,19 +45,34 @@ int open_input_file(const char *const path, file_info_t *const info)
   fseeko(info->file, 0, SEEK_END);
   info->total_length = ftello(info->file);
 
-  info->buffer = lmalloc(BUFFER_SIZE);
-  info->buffer_use = 0;
-  info->block_offset = 0;
-  info->internal_offset = 0;
-  init_checksum(&info->checksum);
+  info->prev_buffer = lmalloc(BUFFER_SIZE);
+  info->buffer      = lmalloc(BUFFER_SIZE);
 
-  return 1;
+  memset(info->prev_buffer, 0, BUFFER_SIZE);
+  memset(info->buffer, 0, BUFFER_SIZE);
+  init_checksum(&info->checksum, checksum_length);
+
+  return seek_file(info, 0);
+}
+
+int seek_file(file_info_t *const info, const off_t offset)
+{
+  info->block_offset = offset;
+  info->buffer_use = 0;
+  info->internal_offset = 0;
+  reset_checksum(&info->checksum);
+  return fseeko(info->file, offset, SEEK_SET) == 0;
 }
 
 int close_input_file(file_info_t *const info)
 {
   lfree(info->buffer);
   return (fclose(info->file) == 0);
+}
+
+off_t file_length(const file_info_t *info)
+{
+  return info->total_length;
 }
 
 int hit_file_end(const file_info_t *const file)
@@ -67,7 +82,7 @@ int hit_file_end(const file_info_t *const file)
 
 int hit_buffer_end(const file_info_t *const info)
 {
-  return info->internal_offset == info->buffer_use;
+  return info->internal_offset >= info->buffer_use;
 }
 
 void populate_forwards(file_info_t *const file)
@@ -78,78 +93,76 @@ void populate_forwards(file_info_t *const file)
   file->block_offset += file->buffer_use;
   file->internal_offset = 0;
 
+  unsigned char *const new_prev_buffer = file->buffer;
+  file->buffer = file->prev_buffer;
+  file->prev_buffer = new_prev_buffer;
+
   fseeko(file->file, file->block_offset, SEEK_SET);
   file->buffer_use = fread(file->buffer, 1, BUFFER_SIZE, file->file);
 }
 
-void reverse_bytes(unsigned char* const data, const size_t length)
+unsigned char get_byte(file_info_t *const info, const int offset)
 {
-  for(size_t i=0; i<(length/2); ++i)
-  {
-    const unsigned char tmp = data[i];
-    data[i] = data[length - i - 1];
-    data[length - i - 1] = tmp;
-  }
+  assert(offset <= 0);
+  assert(offset + info->buffer_use + BUFFER_SIZE >= 0);
+
+  if (info->internal_offset + offset >= 0)
+    return info->buffer[info->internal_offset + offset];
+  else
+    return info->prev_buffer[BUFFER_SIZE + info->internal_offset + offset];
 }
 
-void populate_backwards(file_info_t *const info)
+int find_checksum_match(const file_info_t *const f1_info, file_info_t *const f2_info)
 {
-  if (!hit_buffer_end(info))
-    return;
-
-  info->block_offset += info->buffer_use; 
-  info->buffer_use = (info->total_length - info->block_offset > BUFFER_SIZE ? BUFFER_SIZE : info->total_length - info->block_offset);
-  info->internal_offset = 0;
-
-  fseeko(info->file, -(info->block_offset + info->buffer_use), SEEK_END);
-  const size_t read = fread(info->buffer, 1, info->buffer_use, info->file);
-
-  assert(read == info->buffer_use);
-
-  // Reverse contents of buffer
-  reverse_bytes(info->buffer, info->buffer_use);
-}
-
-int find_checksum_match(file_info_t *const f1_info, file_info_t *const f2_info)
-{
-  assert(!hit_buffer_end(f1_info) && !hit_buffer_end(f2_info));
-
   do
   {
-    add_char_checksum(&f1_info->checksum, f1_info->buffer[f1_info->internal_offset++]);
-    add_char_checksum(&f2_info->checksum, f2_info->buffer[f2_info->internal_offset++]);
+    advance_location(f2_info);
 
     if (checksum_equal(&f1_info->checksum, &f2_info->checksum))
       return 1;
   }
-  while(!hit_buffer_end(f1_info) && !hit_buffer_end(f2_info));
+  while(!hit_file_end(f2_info));
 
   return 0;
 }
 
-void advance_location(file_info_t *const file)
+int advance_location(file_info_t *const file)
 {
+  if (hit_file_end(file))
+    return 0;
+
+  populate_forwards(file);
+
+  add_char_checksum(&file->checksum, 
+    get_byte(file, -checksum_length(&file->checksum)),
+    get_byte(file, 0));
+
   ++file->internal_offset;
+
+  return 1;
 }
 
 int validate_match(file_info_t *const f1_info, file_info_t *const f2_info)
 {
-  fseeko(f1_info->file, -(f1_info->block_offset + f1_info->internal_offset), SEEK_END);
-  fseeko(f2_info->file, 0, SEEK_SET);
+  const size_t cs_length = checksum_length(&f1_info->checksum);
+  assert(cs_length ==  checksum_length(&f2_info->checksum));
 
-  unsigned char *buffer1 = lmalloc(BUFFER_SIZE);
-  unsigned char *buffer2 = lmalloc(BUFFER_SIZE);
+  fseeko(f1_info->file, f1_info->block_offset + f1_info->internal_offset - cs_length, SEEK_SET);
+  fseeko(f2_info->file, f2_info->block_offset + f2_info->internal_offset - cs_length, SEEK_SET);
+
+  unsigned char *const buffer1 = lmalloc(BUFFER_SIZE);
+  unsigned char *const buffer2 = lmalloc(BUFFER_SIZE);
 
   int result = 1;
   while(result == 1 && !feof(f1_info->file) && !feof(f2_info->file))
   {
     const size_t read1 = fread(buffer1, 1, BUFFER_SIZE, f1_info->file);
     const size_t read2 = fread(buffer2, 1, BUFFER_SIZE, f2_info->file);
-    const size_t length = (read1 < read2 ? read1 : read2); 
-
+    const size_t length = (read1 < read2 ? read1 : read2);
+ 
     if (memcmp(buffer1, buffer2, length) != 0)
       result = 0;
-  }
+   }
 
   lfree(buffer1);
   lfree(buffer2);
@@ -193,20 +206,6 @@ int write_merged_file(file_info_t *const f1_info, file_info_t *const f2_info, FI
   lfree(buffer);
 
   return 1;
-}
-
-int find_overlap_start(file_info_t *const f1_info, file_info_t *const f2_info)
-{
-  int candidate_found = 0;
-
-  while(candidate_found == 0 && !hit_file_end(f1_info) && !hit_file_end(f2_info))
-  {
-    populate_backwards(f1_info);
-    populate_forwards(f2_info);
-    candidate_found = find_checksum_match(f1_info, f2_info);
-  }
-
-  return candidate_found;
 }
 
 off_t characters_handled(file_info_t *const info)

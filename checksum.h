@@ -22,24 +22,30 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef CHECKSUN_h
-#define CHECKSUN_h
+#ifndef CHECKSUM_H
+#define CHECKSUM_H
+
+#include <stdlib.h>
 
 /* This number must be prime, and must be smaller than 
  * (2^64)/(2^8) otherwise the multiplication may
  * overflow the >= 64-bit integer.
  */
 typedef unsigned long long checksum_integer_t;
-static const checksum_integer_t PRIME = 36028797018963913ull;
+static const checksum_integer_t LCG_A = 6364136223846793005ull;
 
 typedef struct
 {
+  size_t length;
+  checksum_integer_t lcg_ak;
   checksum_integer_t byte_product;
   checksum_integer_t byte_sum;
 } checksum_t;
 
-void init_checksum(checksum_t *c);
+void init_checksum(checksum_t *c, size_t length);
+void reset_checksum(checksum_t *c);
 int checksum_equal(const checksum_t *c1, const checksum_t *c2);
-void add_char_checksum(checksum_t *checksum, unsigned char in);
+size_t checksum_length(const checksum_t* c);
+void add_char_checksum(checksum_t *checksum, unsigned char out, unsigned char in);
 
 #endif

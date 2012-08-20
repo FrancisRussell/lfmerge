@@ -24,32 +24,40 @@
 
 #include "checksum.h"
 #include <assert.h>
+#include <stdlib.h>
 
-void init_checksum(checksum_t *const c)
+void init_checksum(checksum_t *const c, const size_t length)
 {
-  c->byte_product = 1;
-  c->byte_sum = 0;
+  c->length = length;
+  c->lcg_ak = 1;
+
+  for(size_t i=0; i<length; ++i)
+    c->lcg_ak *= LCG_A;
+
+  c->byte_product = 0;
 }
+
+void reset_checksum(checksum_t *const c)
+{
+  c->byte_product = 0;
+}
+
 
 int checksum_equal(const checksum_t *const c1, const checksum_t *const c2)
 {
-  return c1->byte_product == c2->byte_product &&
-         c1->byte_sum == c2->byte_sum;
+  return c1->byte_product == c2->byte_product;
 }
 
-void add_char_checksum(checksum_t *const checksum, const unsigned char in) 
+void add_char_checksum(checksum_t *const checksum, const unsigned char out, const unsigned char in) 
 {
-  // Since we traverse both forwards and backwards, our checksum consists only
-  // of commutative and associative operations. Specifically, addition modulo
-  // the range of checksum_integer_t and multiplication modulo a prime.
-  checksum->byte_sum += ((checksum_integer_t) in);
+  checksum->byte_product *= LCG_A;
+  checksum->byte_product -= checksum->lcg_ak * out;
+  checksum->byte_product += in;
+}
 
-  // Zero is not a member of our multiplicative group.
-  checksum->byte_product *= ((checksum_integer_t) in) + 1;
-  checksum->byte_product %= PRIME;
-
-  // We should *never* generate 0 via these operations.
-  assert(checksum->byte_product != 0);
+size_t checksum_length(const checksum_t *const c)
+{
+  return c->length;
 }
 
 

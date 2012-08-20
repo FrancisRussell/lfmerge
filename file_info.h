@@ -35,24 +35,26 @@ typedef struct
   FILE   *file;
   off_t  total_length;
   off_t  block_offset;
-  size_t internal_offset;
-  size_t buffer_use;
+  long internal_offset;
+  long buffer_use;
   checksum_t checksum;
+  unsigned char *prev_buffer;
   unsigned char *buffer;
 
 } file_info_t;
 
-int open_input_file(const char *path, file_info_t *info);
+int open_input_file(file_info_t *info, const char *path, size_t checksum_length);
 int close_input_file(file_info_t *info);
+int seek_file(file_info_t *info, off_t offset);
+unsigned char get_byte(file_info_t *info, int offset);
+off_t file_length(const file_info_t *info);
 int hit_file_end(const file_info_t *file);
 int hit_buffer_end(const file_info_t * info);
 void populate_forwards(file_info_t *file);
-void populate_backwards(file_info_t *info);
-int find_checksum_match(file_info_t *f1_info, file_info_t *f2_info);
-void advance_location(file_info_t *file);
+int find_checksum_match(const file_info_t *f1_info, file_info_t *f2_info);
+int advance_location(file_info_t *file);
 int validate_match(file_info_t *f1_info, file_info_t *f2_info);
 int write_merged_file(file_info_t *f1_info, file_info_t *f2_info, FILE *out);
-int find_overlap_start(file_info_t *f1_info, file_info_t *f2_info);
 off_t characters_handled(file_info_t *info);
 
 #endif

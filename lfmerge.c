@@ -27,6 +27,13 @@
 #include <string.h>
 #include <assert.h>
 
+static const char *desc_string = "\
+Searches for the offset of the overlap between \"file1\" and \"file2\".\n\
+If the overlap is found it is printed and the merged file written\n\
+to \"merged\", if supplied.";
+static const char *copyright = "\
+Copyright (c) 2012 Francis Russell <francis@unchartedbackwaters.co.uk>";
+
 static const int MINIMUM_OVERLAP = 1024;
 static const int BUFFER_SIZE = 4194304;
 
@@ -281,11 +288,21 @@ long characters_handled(file_info_t *const info)
   return info->block_offset + info->internal_offset;
 }
 
+void usage()
+{
+  fprintf(stderr, "Usage: lfmerge file2 file2 [merged]\n\n");
+  fprintf(stderr, "%s\n\n", desc_string);
+  fprintf(stderr, 
+    "This build was configured for a minimum overlap of %i bytes.\n\n", 
+    MINIMUM_OVERLAP);
+  fprintf(stderr, "%s\n", copyright);
+}
+
 int main(const int argc, char **const argv)
 {
   if (argc != 3 && argc != 4)
   {
-    fprintf(stderr, "Usage: lfmerge file2 file2 [merged]\n");
+    usage();
     exit(EXIT_FAILURE);
   }
 
@@ -342,7 +359,7 @@ int main(const int argc, char **const argv)
   }
   else
   {
-    printf("Not writing output file.\n");
+    printf("Not writing output file since none supplied.\n");
   }
 
   close_input_file(&f1_info);

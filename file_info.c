@@ -101,17 +101,6 @@ void populate_forwards(file_info_t *const file)
   file->buffer_use = fread(file->buffer, 1, BUFFER_SIZE, file->file);
 }
 
-unsigned char get_byte(file_info_t *const info, const int offset)
-{
-  assert(offset <= 0);
-  assert(offset + info->buffer_use + BUFFER_SIZE >= 0);
-
-  if (info->internal_offset + offset >= 0)
-    return info->buffer[info->internal_offset + offset];
-  else
-    return info->prev_buffer[BUFFER_SIZE + info->internal_offset + offset];
-}
-
 int find_checksum_match(const file_info_t *const f1_info, file_info_t *const f2_info)
 {
   do

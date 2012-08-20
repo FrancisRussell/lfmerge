@@ -26,6 +26,7 @@
 #define FILE_INFO_H
 
 #include <stdio.h>
+#include <assert.h>
 #include "checksum.h"
 
 static const size_t BUFFER_SIZE = 4 * 1048576;
@@ -46,7 +47,6 @@ typedef struct
 int open_input_file(file_info_t *info, const char *path, size_t checksum_length);
 int close_input_file(file_info_t *info);
 int seek_file(file_info_t *info, off_t offset);
-unsigned char get_byte(file_info_t *info, int offset);
 off_t file_length(const file_info_t *info);
 int hit_file_end(const file_info_t *file);
 int hit_buffer_end(const file_info_t * info);
@@ -56,5 +56,20 @@ int advance_location(file_info_t *file);
 int validate_match(file_info_t *f1_info, file_info_t *f2_info);
 int write_merged_file(file_info_t *f1_info, file_info_t *f2_info, FILE *out);
 off_t characters_handled(file_info_t *info);
+
+static inline unsigned char get_byte(file_info_t *const info, const long offset)
+{
+  const long local_offset = info->internal_offset + offset;
+
+  assert(offset <= 0);
+  assert(local_offset + BUFFER_SIZE >= 0);
+
+  if (local_offset >= 0)
+    return info->buffer[local_offset];
+  else
+    return info->prev_buffer[BUFFER_SIZE + local_offset];
+}
+
+
 
 #endif

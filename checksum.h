@@ -26,12 +26,10 @@
 #define CHECKSUM_H
 
 #include <stdlib.h>
+#include <stdint.h>
 
-/* This number must be prime, and must be smaller than 
- * (2^64)/(2^8) otherwise the multiplication may
- * overflow the >= 64-bit integer.
- */
-typedef unsigned long long checksum_integer_t;
+// We use the a value from Knuth's MMIX
+typedef uint64_t checksum_integer_t;
 static const checksum_integer_t LCG_A = 6364136223846793005ull;
 
 typedef struct

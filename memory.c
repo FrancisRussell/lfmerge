@@ -32,7 +32,7 @@ void *lmalloc(const size_t size)
 
   if (data == NULL)
   {
-    fprintf(stderr, "Failed to allocate region of %li bytes.\n", size);
+    fprintf(stderr, "Failed to allocate region of %zu bytes.\n", size);
     exit(EXIT_FAILURE);
   }
 

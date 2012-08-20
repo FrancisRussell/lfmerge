@@ -77,38 +77,38 @@ int main(const int argc, char **const argv)
   {
     const long overlap = characters_handled(&f1_info);
     printf("Found overlap of %li bytes at offset of %li bytes.\n", overlap, f1_info.total_length - overlap);
+
+    if (argc == 4)
+    {
+      FILE *const out = fopen(argv[3], "wb");
+      if (out == NULL)
+      {
+        fprintf(stderr, "Unable to open output file %s: ", argv[3]);
+        perror(NULL);
+        exit(EXIT_FAILURE);
+      }
+   
+      const int result = write_merged_file(&f1_info, &f2_info, out);
+      if (result == 0)
+      {
+        fprintf(stderr, "Failed to write merged file: ");
+        perror(NULL);
+        exit(EXIT_FAILURE);
+      }
+      else
+      {
+        printf("Wrote merged file %s.\n", argv[3]);
+      }
+      fclose(out);
+    }
+    else
+    {
+      printf("Not writing output file since none supplied.\n");
+    }
   }
   else
   {
     printf("Failed to find overlap.\n");
-  }
-
-  if (argc == 4)
-  {
-    FILE *const out = fopen(argv[3], "wb");
-    if (out == NULL)
-    {
-      fprintf(stderr, "Unable to open output file %s: ", argv[3]);
-      perror(NULL);
-      exit(EXIT_FAILURE);
-    }
- 
-    const int result = write_merged_file(&f1_info, &f2_info, out);
-    if (result == 0)
-    {
-      fprintf(stderr, "Failed to write merged file: ");
-      perror(NULL);
-      exit(EXIT_FAILURE);
-    }
-    else
-    {
-      printf("Wrote merged file %s.\n", argv[3]);
-    }
-    fclose(out);
-  }
-  else
-  {
-    printf("Not writing output file since none supplied.\n");
   }
 
   close_input_file(&f1_info);

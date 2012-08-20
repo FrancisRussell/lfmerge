@@ -86,8 +86,8 @@ int main(const int argc, char **const argv)
 
   if (found != 0)
   {
-    const off_t overlap_location = characters_handled(&f2_info) - OVERLAP_SIZE;
-    printf("Found overlap at offset of %ju bytes into second file.\n", overlap_location);
+    const off_t join_location = characters_handled(&f2_info);
+    printf("Found join location at offset of %ju bytes into second file.\n", join_location);
 
     if (argc == 4)
     {

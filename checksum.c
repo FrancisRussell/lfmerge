@@ -26,14 +26,24 @@
 #include <assert.h>
 #include <stdlib.h>
 
+static checksum_integer_t checksum_pow(const checksum_integer_t x, 
+                                       const checksum_integer_t y)
+{
+  if (y == 0)
+    return 1;
+
+  const checksum_integer_t sub_pow = checksum_pow(x, y/2);
+  
+  if (y % 2 == 0)
+    return sub_pow * sub_pow;
+  else
+    return sub_pow * sub_pow * x;
+}
+
 void init_checksum(checksum_t *const c, const size_t length)
 {
   c->length = length;
-  c->lcg_ak = 1;
-
-  for(size_t i=0; i<length; ++i)
-    c->lcg_ak *= LCG_A;
-
+  c->lcg_ak = checksum_pow(LCG_A, length);
   c->byte_product = 0;
 }
 
@@ -41,7 +51,6 @@ void reset_checksum(checksum_t *const c)
 {
   c->byte_product = 0;
 }
-
 
 int checksum_equal(const checksum_t *const c1, const checksum_t *const c2)
 {

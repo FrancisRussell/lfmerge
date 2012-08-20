@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include "memory.h"
 
-void *lmalloc(size_t size)
+void *lmalloc(const size_t size)
 {
   void* const data = malloc(size);
 

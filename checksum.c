@@ -1,7 +1,7 @@
 #include "checksum.h"
 #include <assert.h>
 
-void init_checksum(checksum_t* c)
+void init_checksum(checksum_t *const c)
 {
   c->byte_product = 1;
   c->byte_sum = 0;

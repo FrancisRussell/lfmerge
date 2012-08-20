@@ -58,7 +58,7 @@ int main(const int argc, char **const argv)
   if (argc == 4 && (strcmp(argv[1], argv[3])==0 || strcmp(argv[2], argv[3])==0))
   {
     fprintf(stderr, "Output file cannot also be one of the input files.\n");
-      exit(EXIT_FAILURE);
+    exit(EXIT_FAILURE);
   }
 
   file_info_t f1_info, f2_info;

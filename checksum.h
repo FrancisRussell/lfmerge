@@ -14,8 +14,8 @@ typedef struct
   checksum_integer_t byte_sum;
 } checksum_t;
 
-void init_checksum(checksum_t* c);
+void init_checksum(checksum_t *c);
 int checksum_equal(const checksum_t *c1, const checksum_t *c2);
-void add_char_checksum(checksum_t *checksum, const unsigned char in);
+void add_char_checksum(checksum_t *checksum, unsigned char in);
 
 #endif

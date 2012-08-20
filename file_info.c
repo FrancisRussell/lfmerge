@@ -6,7 +6,7 @@
 #include <assert.h>
 #include <string.h>
 
-static void reverse_bytes(unsigned char* const data, const size_t length);
+static void reverse_bytes(unsigned char *data, size_t length);
 
 int open_input_file(const char *const path, file_info_t *const info)
 {
@@ -68,7 +68,7 @@ void reverse_bytes(unsigned char* const data, const size_t length)
   }
 }
 
-void populate_backwards(file_info_t* const info)
+void populate_backwards(file_info_t *const info)
 {
   if (!hit_buffer_end(info))
     return;
@@ -188,5 +188,3 @@ long characters_handled(file_info_t *const info)
 {
   return info->block_offset + info->internal_offset;
 }
-
-

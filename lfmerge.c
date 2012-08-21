@@ -101,6 +101,9 @@ int main(const int argc, char **const argv)
     printf("Of the overlapping region of size %ju, the final %ju (%.2f%%) bytes matched exactly.\n", 
       match_info.total_bytes, match_info.matching_bytes, match_percentage);
 
+    if (match_info.total_bytes < join_location)
+      printf("Warning: This merge completely subsumes the first file. Mostly like the output will be useless.\n");
+
     if (argc == 4)
     {
       FILE *const out = fopen(argv[3], "wb");

@@ -173,7 +173,12 @@ void compute_match_info(FILE *const f1, FILE *const f2, match_info_t *const info
  
     info->total_bytes += length;
     for(size_t i=0; i<length; ++i)
-      info->matching_bytes += (buffer1[i] == buffer2[i]);
+    {
+      if (buffer1[i] == buffer2[i])
+        ++info->matching_bytes;
+      else
+        info->matching_bytes = 0;
+    }
   }
 
   lfree(buffer1);

@@ -98,8 +98,8 @@ int main(const int argc, char **const argv)
     const double match_percentage = 
       (100.0 * match_info.matching_bytes)/match_info.total_bytes;
 
-    printf("Within overlapping region, %ju/%ju (%.2f%%) bytes matched.\n", 
-      match_info.matching_bytes, match_info.total_bytes, match_percentage);
+    printf("Of the overlapping region of size %ju, the final %ju (%.2f%%) bytes matched exactly.\n", 
+      match_info.total_bytes, match_info.matching_bytes, match_percentage);
 
     if (argc == 4)
     {

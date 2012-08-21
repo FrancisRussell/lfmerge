@@ -35,6 +35,7 @@ int open_input_file(file_info_t *const info,
                     const char *const path, 
                     const size_t checksum_length)
 {
+  assert(checksum_length <= BUFFER_SIZE);
   info->file = fopen(path, "rb");
   if (info->file == NULL)
   {

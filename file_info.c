@@ -61,6 +61,7 @@ int seek_file(file_info_t *const info, const off_t offset)
   info->buffer_use = 0;
   info->internal_offset = 0;
   memset(info->prev_buffer, 0, BUFFER_SIZE);
+  memset(info->buffer, 0, BUFFER_SIZE);
   reset_checksum(&info->checksum);
   return fseeko(info->file, offset, SEEK_SET) == 0;
 }

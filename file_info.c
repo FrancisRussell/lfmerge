@@ -68,6 +68,7 @@ int seek_file(file_info_t *const info, const off_t offset)
 
 int close_input_file(file_info_t *const info)
 {
+  lfree(info->prev_buffer);
   lfree(info->buffer);
   return (fclose(info->file) == 0);
 }

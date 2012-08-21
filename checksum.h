@@ -36,7 +36,6 @@ typedef struct
 {
   size_t length;
   checksum_integer_t lcg_ak;
-  checksum_integer_t byte_product;
   checksum_integer_t byte_sum;
 } checksum_t;
 

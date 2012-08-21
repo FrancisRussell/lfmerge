@@ -45,6 +45,12 @@ typedef struct
 
 } file_info_t;
 
+typedef struct
+{
+  off_t matching_bytes;
+  off_t total_bytes;
+} match_info_t;
+
 int open_input_file(file_info_t *info, const char *path, size_t checksum_length);
 int close_input_file(file_info_t *info);
 int seek_file(file_info_t *info, off_t offset);
@@ -57,6 +63,8 @@ int advance_location(file_info_t *file);
 int validate_match(file_info_t *f1_info, file_info_t *f2_info);
 int write_merged_file(file_info_t *f1_info, file_info_t *f2_info, FILE *out);
 off_t characters_handled(file_info_t *info);
+void compute_match_info(FILE *f1, FILE *f2, match_info_t *info);
+void get_match_info(file_info_t *f1_info, file_info_t *f2_info, match_info_t *info);
 
 static inline unsigned char get_byte(file_info_t *const info, const long offset)
 {

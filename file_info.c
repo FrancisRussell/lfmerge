@@ -140,24 +140,44 @@ int validate_match(file_info_t *const f1_info, file_info_t *const f2_info)
   fseeko(f1_info->file, f1_info->block_offset + f1_info->internal_offset - cs_length, SEEK_SET);
   fseeko(f2_info->file, f2_info->block_offset + f2_info->internal_offset - cs_length, SEEK_SET);
 
+  match_info_t match_info;
+  compute_match_info(f1_info->file, f2_info->file, &match_info);
+  return match_info.matching_bytes == match_info.total_bytes;
+}
+
+void get_match_info(file_info_t *const f1_info, file_info_t *const f2_info, match_info_t *const info)
+{
+  const off_t f2_offset = characters_handled(f2_info);
+  const off_t f1_start = f1_info->total_length - (f2_offset > f1_info->total_length ? f1_info->total_length : f2_offset);
+  const off_t f2_start = f2_offset - (f1_info->total_length - f1_start);
+
+  fseeko(f1_info->file, f1_start, SEEK_SET);
+  fseeko(f2_info->file, f2_start, SEEK_SET);
+
+  compute_match_info(f1_info->file, f2_info->file, info);
+}
+
+void compute_match_info(FILE *const f1, FILE *const f2, match_info_t *const info)
+{
+  info->matching_bytes = 0;
+  info->total_bytes = 0;
+
   unsigned char *const buffer1 = lmalloc(BUFFER_SIZE);
   unsigned char *const buffer2 = lmalloc(BUFFER_SIZE);
 
-  int result = 1;
-  while(result == 1 && !feof(f1_info->file) && !feof(f2_info->file))
+  while(!feof(f1) && !feof(f2))
   {
-    const size_t read1 = fread(buffer1, 1, BUFFER_SIZE, f1_info->file);
-    const size_t read2 = fread(buffer2, 1, BUFFER_SIZE, f2_info->file);
+    const size_t read1 = fread(buffer1, 1, BUFFER_SIZE, f1);
+    const size_t read2 = fread(buffer2, 1, BUFFER_SIZE, f2);
     const size_t length = (read1 < read2 ? read1 : read2);
  
-    if (memcmp(buffer1, buffer2, length) != 0)
-      result = 0;
+    info->total_bytes += length;
+    for(size_t i=00; i<length; ++i)
+      info->matching_bytes += (buffer1[i] == buffer2[i]);
    }
 
   lfree(buffer1);
   lfree(buffer2);
-
-  return result;
 }
 
 int write_merged_file(file_info_t *const f1_info, file_info_t *const f2_info, FILE *const out)

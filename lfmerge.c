@@ -93,6 +93,14 @@ int main(const int argc, char **const argv)
     const off_t join_location = characters_handled(&f2_info);
     printf("Found join location at offset of %ju bytes into second file.\n", join_location);
 
+    match_info_t match_info;
+    get_match_info(&f1_info, &f2_info, &match_info);
+    const double match_percentage = 
+      (100.0 * match_info.matching_bytes)/match_info.total_bytes;
+
+    printf("Within overlapping region, %ju/%ju (%.2f%%) bytes matched.\n", 
+      match_info.matching_bytes, match_info.total_bytes, match_percentage);
+
     if (argc == 4)
     {
       FILE *const out = fopen(argv[3], "wb");

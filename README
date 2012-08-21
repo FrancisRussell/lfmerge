@@ -2,14 +2,14 @@ To build, simply run:
 
 > make
 
-This program was written by Francis Russell for James Kimber. It takes
-two input files and searches for an overlap between the end of the first
-file and the start of the second. If an overlap is found, the merged
-file is optionally written out.
+This program was written by Francis Russell for James Kimber. It takes two
+input files and searches for an overlap between the footer of the first file
+and any region of the second. If an overlap is found, the merged file is
+optionally written out. Only the footer of the first file need match,
+data in the second file before the overlapping region will be replaced
+with the contents of the first file before that region.
 
-To detect where to look for candidate overlaps, a checksum is
-incrementally applied to both files. Since this checksum must work
-backwards, it is built entirely from associate and commutative
-operators. A full comparison is performed before outputting the result.
-Making the checksum associate and commutative means it has some
-pathological worst cases, but these have not been observed in practise.
+To detect where to look for candidate overlaps, a checksum if calculated
+for the footer of the first file. A rolling checksum is computed for the
+second file and when a match is found, a full check of the overlapping
+region is performed.

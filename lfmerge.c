@@ -30,9 +30,12 @@
 #include "checksum.h"
 
 static const char *desc_string = "\
-Searches for the offset of the overlap between \"file1\" and \"file2\".\n\
-If the overlap is found it is printed and the merged file written\n\
-to \"merged\", if supplied.";
+Searches for the offset of an overlap between the footer of \"file1\"\n\
+and any region in \"file2\". Since the overlap can occur at any point\n\
+in \"file2\", this is useful for instances where \"file2\" has headers\n\
+that must be discarded. If the overlap is found it is printed and the\n\
+merged file written to \"merged\", if supplied.";
+
 static const char *copyright = "\
 Copyright (c) 2012 Francis Russell <francis@unchartedbackwaters.co.uk>";
 
@@ -43,7 +46,7 @@ void usage()
   fprintf(stderr, "Usage: lfmerge file1 file2 [merged]\n\n");
   fprintf(stderr, "%s\n\n", desc_string);
   fprintf(stderr, 
-    "This build was configured for a minimum overlap of %i bytes.\n\n", 
+    "This build was configured with an overlap size of %i bytes.\n\n", 
     OVERLAP_SIZE);
   fprintf(stderr, "%s\n", copyright);
 }

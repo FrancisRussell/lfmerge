@@ -123,7 +123,8 @@ int advance_location(file_info_t *const file)
   if (hit_file_end(file))
     return 0;
 
-  populate_forwards(file);
+  if (hit_buffer_end(file))
+    populate_forwards(file);
 
   add_char_checksum(&file->checksum, 
     get_byte(file, -checksum_length(&file->checksum)),

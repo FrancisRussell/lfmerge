@@ -102,7 +102,7 @@ int main(const int argc, char **const argv)
       match_info.total_bytes, match_info.matching_bytes, match_percentage);
 
     if (match_info.total_bytes < join_location)
-      printf("Warning: This merge will produce a file shorter than the second. Mostly like the output will be useless.\n");
+      printf("Warning: This merge will produce a file shorter than the second. Mostly likely the output will be useless.\n");
 
     if (argc == 4)
     {

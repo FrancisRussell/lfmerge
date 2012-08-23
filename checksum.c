@@ -51,22 +51,3 @@ void reset_checksum(checksum_t *const c)
 {
   c->byte_sum = 0;
 }
-
-int checksum_equal(const checksum_t *const c1, const checksum_t *const c2)
-{
-  return c1->byte_sum == c2->byte_sum;
-}
-
-void add_char_checksum(checksum_t *const checksum, const unsigned char out, const unsigned char in) 
-{
-  checksum->byte_sum *= LCG_A;
-  checksum->byte_sum -= checksum->lcg_ak * out;
-  checksum->byte_sum += in;
-}
-
-size_t checksum_length(const checksum_t *const c)
-{
-  return c->length;
-}
-
-

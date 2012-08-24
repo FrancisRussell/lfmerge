@@ -75,6 +75,7 @@ int main(const int argc, char **const argv)
   if (file_length(&f1_info) < OVERLAP_SIZE)
   {
     fprintf(stderr, "First file needs to be at least %i bytes long.\n", OVERLAP_SIZE);
+    FAIL_FORWARD(close_input_file(&f1_info));
     exit(EXIT_FAILURE);
   }
 

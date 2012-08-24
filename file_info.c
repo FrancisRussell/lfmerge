@@ -59,7 +59,7 @@ status_t open_input_file(file_info_t *const info,
 
 status_t seek_file(file_info_t *const info, const off_t offset)
 {
-  int _status = LF_INTERNAL_ERROR;
+  status_t _status = LF_INTERNAL_ERROR;
   info->block_offset = offset;
   info->buffer_use = 0;
   info->internal_offset = 0;
@@ -76,7 +76,7 @@ status_t seek_file(file_info_t *const info, const off_t offset)
 
 status_t close_input_file(file_info_t *const info)
 {
-  int _status = LF_INTERNAL_ERROR;
+  status_t _status = LF_INTERNAL_ERROR;
   free(info->prev_buffer);
   free(info->buffer);
   

@@ -117,6 +117,7 @@ status_t populate_forwards(file_info_t *const file)
 
   FAIL_SYS(fseeko(file->file, file->block_offset, SEEK_SET) == -1);
   file->buffer_use = fread(file->buffer, 1, BUFFER_SIZE, file->file);
+  FAIL_SYS(file->buffer_use != BUFFER_SIZE && ferror(file->file));
   return LF_OK;
 
   fail:
@@ -210,7 +211,9 @@ status_t compute_match_info(FILE *const f1, FILE *const f2, match_info_t *const 
   while(!feof(f1) && !feof(f2))
   {
     const size_t read1 = fread(buffer1, 1, BUFFER_SIZE, f1);
+    FAIL_SYS(read1 != BUFFER_SIZE && ferror(f1));
     const size_t read2 = fread(buffer2, 1, BUFFER_SIZE, f2);
+    FAIL_SYS(read2 != BUFFER_SIZE && ferror(f2));
     const size_t length = (read1 < read2 ? read1 : read2);
  
     info->total_bytes += length;
@@ -241,6 +244,7 @@ status_t write_merged_file(file_info_t *const f1_info, file_info_t *const f2_inf
   do
   {
     read = fread(buffer, 1, BUFFER_SIZE, f1_info->file);
+    FAIL_SYS(read != BUFFER_SIZE && ferror(f1_info->file));
     const size_t written = fwrite(buffer, 1, read, out);
     FAIL_SYS(written != read);
   }
@@ -250,6 +254,7 @@ status_t write_merged_file(file_info_t *const f1_info, file_info_t *const f2_inf
   do
   {
     read = fread(buffer, 1, BUFFER_SIZE, f2_info->file);
+    FAIL_SYS(read != BUFFER_SIZE && ferror(f2_info->file));
     const size_t written = fwrite(buffer, 1, read, out);
     FAIL_SYS(written != read);
   }

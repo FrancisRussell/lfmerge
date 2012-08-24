@@ -23,54 +23,68 @@
  */
 
 #include "file_info.h"
-#include "memory.h"
 #include "checksum.h"
+#include "errors.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
 #include <sys/types.h>
 
-int open_input_file(file_info_t *const info, 
-                    const char *const path, 
-                    const size_t checksum_length)
+status_t open_input_file(file_info_t *const info, 
+                         const char *const path, 
+                         const size_t checksum_length)
 {
   assert(checksum_length <= BUFFER_SIZE);
-  info->file = fopen(path, "rb");
-  if (info->file == NULL)
-  {
-    fprintf(stderr, "Unable to open input file %s: ", path);
-    perror(NULL);
-    exit(EXIT_FAILURE);
-  }
+  status_t _status = LF_INTERNAL_ERROR;
+  info->prev_buffer = info->buffer = NULL;
 
-  fseeko(info->file, 0, SEEK_END);
-  info->total_length = ftello(info->file);
-
-  info->prev_buffer = lmalloc(BUFFER_SIZE);
-  info->buffer      = lmalloc(BUFFER_SIZE);
-
+  FAIL_SYS((info->prev_buffer = malloc(BUFFER_SIZE)) == NULL);
+  FAIL_SYS((info->buffer = malloc(BUFFER_SIZE)) == NULL);
   init_checksum(&info->checksum, checksum_length);
 
-  return seek_file(info, 0);
+  info->file = fopen(path, "rb");
+  FAIL_SYS(info->file == NULL);
+  FAIL_SYS(fseeko(info->file, 0, SEEK_END) == -1);
+  info->total_length = ftello(info->file);
+
+  FAIL_FORWARD(seek_file(info, 0));
+  return LF_OK;
+
+  fail:
+  free(info->buffer);
+  free(info->prev_buffer);
+  return _status;
 }
 
-int seek_file(file_info_t *const info, const off_t offset)
+status_t seek_file(file_info_t *const info, const off_t offset)
 {
+  int _status = LF_INTERNAL_ERROR;
   info->block_offset = offset;
   info->buffer_use = 0;
   info->internal_offset = 0;
   memset(info->prev_buffer, 0, BUFFER_SIZE);
   memset(info->buffer, 0, BUFFER_SIZE);
   reset_checksum(&info->checksum);
-  return fseeko(info->file, offset, SEEK_SET) == 0;
+  FAIL_SYS(fseeko(info->file, offset, SEEK_SET) == -1);
+
+  return LF_OK;
+
+  fail:
+  return _status;
 }
 
-int close_input_file(file_info_t *const info)
+status_t close_input_file(file_info_t *const info)
 {
-  lfree(info->prev_buffer);
-  lfree(info->buffer);
-  return (fclose(info->file) == 0);
+  int _status = LF_INTERNAL_ERROR;
+  free(info->prev_buffer);
+  free(info->buffer);
+  
+  FAIL_SYS(fclose(info->file) == EOF);
+  return LF_OK;
+
+  fail:
+  return _status;
 }
 
 off_t file_length(const file_info_t *info)
@@ -88,10 +102,11 @@ int hit_buffer_end(const file_info_t *const info)
   return info->internal_offset >= info->buffer_use;
 }
 
-void populate_forwards(file_info_t *const file)
+status_t populate_forwards(file_info_t *const file)
 {
+  status_t _status = LF_INTERNAL_ERROR;
   if (!hit_buffer_end(file))
-    return;
+    return LF_OK;
 
   file->block_offset += file->buffer_use;
   file->internal_offset = 0;
@@ -100,73 +115,97 @@ void populate_forwards(file_info_t *const file)
   file->buffer = file->prev_buffer;
   file->prev_buffer = new_prev_buffer;
 
-  fseeko(file->file, file->block_offset, SEEK_SET);
+  FAIL_SYS(fseeko(file->file, file->block_offset, SEEK_SET) == -1);
   file->buffer_use = fread(file->buffer, 1, BUFFER_SIZE, file->file);
+  return LF_OK;
+
+  fail:
+  return _status;
 }
 
-int find_checksum_match(const file_info_t *const f1_info, file_info_t *const f2_info)
+status_t find_checksum_match(const file_info_t *const f1_info, file_info_t *const f2_info, int *const success)
 {
+  *success = 0;
   do
   {
-    advance_location(f2_info);
+    const status_t status = advance_location(f2_info);
+    if (status != LF_OK)
+      return status;
 
     if (checksum_equal(&f1_info->checksum, &f2_info->checksum))
-      return 1;
+    {
+      *success = 1;
+      return LF_OK;
+    }
   }
   while(!hit_file_end(f2_info));
 
-  return 0;
+  return LF_OK;
 }
 
-int advance_location(file_info_t *const file)
+status_t advance_location(file_info_t *const file)
 {
-  if (hit_file_end(file))
-    return 0;
+  status_t _status = LF_INTERNAL_ERROR;
+  FAIL_PRED(hit_file_end(file), LF_INTERNAL_ERROR);
 
   if (hit_buffer_end(file))
-    populate_forwards(file);
+    FAIL_FORWARD(populate_forwards(file));
 
   add_char_checksum(&file->checksum, 
     get_byte(file, -checksum_length(&file->checksum)),
     get_byte(file, 0));
 
   ++file->internal_offset;
+  return LF_OK;
 
-  return 1;
+  fail:
+  return _status;
 }
 
-int validate_match(file_info_t *const f1_info, file_info_t *const f2_info)
+status_t validate_match(file_info_t *const f1_info, file_info_t *const f2_info, int *const is_valid)
 {
+  status_t _status = LF_INTERNAL_ERROR;
   const size_t cs_length = checksum_length(&f1_info->checksum);
   assert(cs_length ==  checksum_length(&f2_info->checksum));
 
-  fseeko(f1_info->file, f1_info->block_offset + f1_info->internal_offset - cs_length, SEEK_SET);
-  fseeko(f2_info->file, f2_info->block_offset + f2_info->internal_offset - cs_length, SEEK_SET);
+  FAIL_SYS(fseeko(f1_info->file, f1_info->block_offset + f1_info->internal_offset - cs_length, SEEK_SET) == -1);
+  FAIL_SYS(fseeko(f2_info->file, f2_info->block_offset + f2_info->internal_offset - cs_length, SEEK_SET) == -1);
 
   match_info_t match_info;
-  compute_match_info(f1_info->file, f2_info->file, &match_info);
-  return match_info.matching_bytes == match_info.total_bytes;
+  FAIL_FORWARD(compute_match_info(f1_info->file, f2_info->file, &match_info));
+  *is_valid = (match_info.matching_bytes == match_info.total_bytes);
+  return LF_OK;
+
+  fail:
+  return _status;
 }
 
-void get_match_info(file_info_t *const f1_info, file_info_t *const f2_info, match_info_t *const info)
+status_t get_match_info(file_info_t *const f1_info, file_info_t *const f2_info, match_info_t *const info)
 {
+  status_t _status = LF_INTERNAL_ERROR;
   const off_t f2_offset = characters_handled(f2_info);
   const off_t f1_start = f1_info->total_length - (f2_offset > f1_info->total_length ? f1_info->total_length : f2_offset);
   const off_t f2_start = f2_offset - (f1_info->total_length - f1_start);
 
-  fseeko(f1_info->file, f1_start, SEEK_SET);
-  fseeko(f2_info->file, f2_start, SEEK_SET);
+  FAIL_SYS(fseeko(f1_info->file, f1_start, SEEK_SET) == -1);
+  FAIL_SYS(fseeko(f2_info->file, f2_start, SEEK_SET) == -1);
+  FAIL_FORWARD(compute_match_info(f1_info->file, f2_info->file, info));
+  return LF_OK;
 
-  compute_match_info(f1_info->file, f2_info->file, info);
+  fail:
+  return _status;
 }
 
-void compute_match_info(FILE *const f1, FILE *const f2, match_info_t *const info)
+status_t compute_match_info(FILE *const f1, FILE *const f2, match_info_t *const info)
 {
+  status_t _status = LF_INTERNAL_ERROR;
   info->matching_bytes = 0;
   info->total_bytes = 0;
 
-  unsigned char *const buffer1 = lmalloc(BUFFER_SIZE);
-  unsigned char *const buffer2 = lmalloc(BUFFER_SIZE);
+  unsigned char *buffer1 = NULL;
+  unsigned char *buffer2 = NULL;
+  FAIL_SYS((buffer1 = malloc(BUFFER_SIZE)) == NULL);
+  FAIL_SYS((buffer2 = malloc(BUFFER_SIZE)) == NULL);
 
   while(!feof(f1) && !feof(f2))
   {
@@ -183,47 +222,44 @@ void compute_match_info(FILE *const f1, FILE *const f2, match_info_t *const info
         info->matching_bytes = 0;
     }
   }
+  _status = LF_OK;
 
-  lfree(buffer1);
-  lfree(buffer2);
+  fail:
+  free(buffer1);
+  free(buffer2);
+  return _status;
 }
 
-int write_merged_file(file_info_t *const f1_info, file_info_t *const f2_info, FILE *const out)
+status_t write_merged_file(file_info_t *const f1_info, file_info_t *const f2_info, FILE *const out)
 {
-  fseeko(f1_info->file, 0, SEEK_SET);
-  unsigned char *const buffer = lmalloc(BUFFER_SIZE);
+  status_t _status = LF_INTERNAL_ERROR;
+  unsigned char *buffer = NULL;
+  FAIL_SYS(fseeko(f1_info->file, 0, SEEK_SET) == -1);
+  FAIL_SYS((buffer = malloc(BUFFER_SIZE)) == NULL);
 
   size_t read;
   do
   {
     read = fread(buffer, 1, BUFFER_SIZE, f1_info->file);
     const size_t written = fwrite(buffer, 1, read, out);
-
-    if (written != read)
-    {
-      lfree(buffer);
-      return 0;
-    }
+    FAIL_SYS(written != read);
   }
   while(read != 0);
 
-  fseeko(f2_info->file, f2_info->block_offset + f2_info->internal_offset, SEEK_SET);
+  FAIL_SYS(fseeko(f2_info->file, f2_info->block_offset + f2_info->internal_offset, SEEK_SET) == -1);
   do
   {
     read = fread(buffer, 1, BUFFER_SIZE, f2_info->file);
     const size_t written = fwrite(buffer, 1, read, out);
-
-    if (written != read)
-    {
-      lfree(buffer);
-      return 0;
-    }
+    FAIL_SYS(written != read);
   }
   while(read != 0);
 
-  lfree(buffer);
+  _status=LF_OK;
 
-  return 1;
+  fail:
+  free(buffer);
+  return _status;
 }
 
 off_t characters_handled(file_info_t *const info)

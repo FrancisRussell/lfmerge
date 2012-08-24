@@ -6,17 +6,17 @@ LDFLAGS=${LFS_LDFLAGS}
 
 all: lfmerge
 
-lfmerge.o: file_info.h checksum.h
+lfmerge.o: file_info.h checksum.h errors.h
 
-file_info.o: file_info.h checksum.h memory.h
+file_info.o: file_info.h checksum.h errors.h
 
 checksum.o: checksum.h
 
-memory.o: memory.h
+errors.o: errors.h
 
-lfmerge: file_info.o checksum.o memory.o
+lfmerge: file_info.o checksum.o errors.o
 
 clean:
-	rm -f lfmerge checksum.o  file_info.o  lfmerge.o  memory.o
+	rm -f lfmerge checksum.o file_info.o lfmerge.o memory.o errors.o
 
 .PHONY: clean all

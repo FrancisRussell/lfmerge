@@ -25,9 +25,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include <sys/types.h>
 #include "file_info.h"
 #include "checksum.h"
+#include "errors.h"
 
 static const char *desc_string = "\
 Searches for the offset of an overlap between the footer of \"file1\"\n\
@@ -53,6 +55,8 @@ void usage()
 
 int main(const int argc, char **const argv)
 {
+  status_t _status;
+
   if (argc != 3 && argc != 4)
   {
     usage();
@@ -66,26 +70,30 @@ int main(const int argc, char **const argv)
   }
 
   file_info_t f1_info, f2_info;
-  open_input_file(&f1_info, argv[1], OVERLAP_SIZE);
-  open_input_file(&f2_info, argv[2], OVERLAP_SIZE);
+  FAIL_FORWARD_MSG(open_input_file(&f1_info, argv[1], OVERLAP_SIZE), "Couldn't open first file.");
 
-  // Checksum end of first file
-  if (seek_file(&f1_info, file_length(&f1_info) - OVERLAP_SIZE))
+  if (file_length(&f1_info) < OVERLAP_SIZE)
   {
-    while(advance_location(&f1_info));
-  }
-  else
-  {
-    fprintf(stderr, "Unable to checksum footer of first file. Probably too small.\n");
+    fprintf(stderr, "First file needs to be at least %i bytes long.\n", OVERLAP_SIZE);
     exit(EXIT_FAILURE);
   }
+
+  FAIL_FORWARD_MSG(open_input_file(&f2_info, argv[2], OVERLAP_SIZE), "Couldn't open second file.");
+
+  // Checksum end of first file
+  FAIL_FORWARD_MSG(seek_file(&f1_info, file_length(&f1_info) - OVERLAP_SIZE), "Couldn't seek to footer of first file.");
+
+  while(!hit_file_end(&f1_info))
+    FAIL_FORWARD(advance_location(&f1_info));
 
   int found = 0;
   while(!found && !hit_file_end(&f2_info))
   {
-    found = find_checksum_match(&f1_info, &f2_info) &&
-      characters_handled(&f2_info) >= OVERLAP_SIZE && 
-      validate_match(&f1_info, &f2_info);
+    FAIL_FORWARD(find_checksum_match(&f1_info, &f2_info, &found));
+    found = found && (characters_handled(&f2_info) >= OVERLAP_SIZE);
+
+    if (found)
+      FAIL_FORWARD(validate_match(&f1_info, &f2_info, &found));
   }
 
   if (found != 0)
@@ -94,7 +102,8 @@ int main(const int argc, char **const argv)
     printf("Found join location at offset of %ju bytes into second file.\n", join_location);
 
     match_info_t match_info;
-    get_match_info(&f1_info, &f2_info, &match_info);
+    FAIL_FORWARD(get_match_info(&f1_info, &f2_info, &match_info));
+
     const double match_percentage = 
       (100.0 * match_info.matching_bytes)/match_info.total_bytes;
 
@@ -107,25 +116,11 @@ int main(const int argc, char **const argv)
     if (argc == 4)
     {
       FILE *const out = fopen(argv[3], "wb");
-      if (out == NULL)
-      {
-        fprintf(stderr, "Unable to open output file %s: ", argv[3]);
-        perror(NULL);
-        exit(EXIT_FAILURE);
-      }
+      FAIL_SYS_MSG(out == NULL, "Failed to open output file.");
    
-      const int result = write_merged_file(&f1_info, &f2_info, out);
-      if (result == 0)
-      {
-        fprintf(stderr, "Failed to write merged file: ");
-        perror(NULL);
-        exit(EXIT_FAILURE);
-      }
-      else
-      {
-        printf("Wrote merged file %s.\n", argv[3]);
-      }
-      fclose(out);
+      FAIL_FORWARD_MSG(write_merged_file(&f1_info, &f2_info, out), "Couldn't write output file.");
+      FAIL_SYS_MSG(fclose(out) == EOF, "Failed to close output file after write.");
+      printf("Wrote merged file %s.\n", argv[3]);
     }
     else
     {
@@ -137,8 +132,13 @@ int main(const int argc, char **const argv)
     printf("Failed to find overlap.\n");
   }
 
-  close_input_file(&f1_info);
-  close_input_file(&f2_info);
- 
-  exit(EXIT_SUCCESS);
+  FAIL_FORWARD_MSG(close_input_file(&f1_info), "Error closing first input file.");
+  FAIL_FORWARD_MSG(close_input_file(&f2_info), "Error closing second input file.");
+  exit(found != 0 ? EXIT_SUCCESS : EXIT_FAILURE);
+
+  fail:;
+  char buffer[256];
+  lf_strerror(_status, buffer, sizeof(buffer));
+  fprintf(stderr, "An error occured: %s\n", buffer);
+  exit(EXIT_FAILURE);
 }

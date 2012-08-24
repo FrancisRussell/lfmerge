@@ -137,7 +137,7 @@ int main(const int argc, char **const argv)
   FAIL_FORWARD_MSG(close_input_file(&f2_info), "Error closing second input file.");
   exit(found != 0 ? EXIT_SUCCESS : EXIT_FAILURE);
 
-  fail:;
+fail:;
   char buffer[256];
   lf_strerror(_status, buffer, sizeof(buffer));
   fprintf(stderr, "An error occured: %s\n", buffer);

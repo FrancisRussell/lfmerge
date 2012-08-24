@@ -51,7 +51,7 @@ status_t open_input_file(file_info_t *const info,
   FAIL_FORWARD(seek_file(info, 0));
   return LF_OK;
 
-  fail:
+fail:
   free(info->buffer);
   free(info->prev_buffer);
   return _status;
@@ -70,7 +70,7 @@ status_t seek_file(file_info_t *const info, const off_t offset)
 
   return LF_OK;
 
-  fail:
+fail:
   return _status;
 }
 
@@ -83,7 +83,7 @@ status_t close_input_file(file_info_t *const info)
   FAIL_SYS(fclose(info->file) == EOF);
   return LF_OK;
 
-  fail:
+fail:
   return _status;
 }
 
@@ -120,7 +120,7 @@ status_t populate_forwards(file_info_t *const file)
   FAIL_SYS(file->buffer_use != BUFFER_SIZE && ferror(file->file));
   return LF_OK;
 
-  fail:
+fail:
   return _status;
 }
 
@@ -159,7 +159,7 @@ status_t advance_location(file_info_t *const file)
   ++file->internal_offset;
   return LF_OK;
 
-  fail:
+fail:
   return _status;
 }
 
@@ -177,7 +177,7 @@ status_t validate_match(file_info_t *const f1_info, file_info_t *const f2_info, 
   *is_valid = (match_info.matching_bytes == match_info.total_bytes);
   return LF_OK;
 
-  fail:
+fail:
   return _status;
 }
 
@@ -193,7 +193,7 @@ status_t get_match_info(file_info_t *const f1_info, file_info_t *const f2_info, 
   FAIL_FORWARD(compute_match_info(f1_info->file, f2_info->file, info));
   return LF_OK;
 
-  fail:
+fail:
   return _status;
 }
 
@@ -227,7 +227,7 @@ status_t compute_match_info(FILE *const f1, FILE *const f2, match_info_t *const 
   }
   _status = LF_OK;
 
-  fail:
+fail:
   free(buffer1);
   free(buffer2);
   return _status;
@@ -262,7 +262,7 @@ status_t write_merged_file(file_info_t *const f1_info, file_info_t *const f2_inf
 
   _status=LF_OK;
 
-  fail:
+fail:
   free(buffer);
   return _status;
 }

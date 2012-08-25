@@ -31,6 +31,13 @@
 #include <string.h>
 #include <sys/types.h>
 
+static int hit_buffer_end(const file_info_t *info);
+
+inline int hit_buffer_end(const file_info_t *const info)
+{
+  return info->internal_offset >= info->buffer_use;
+}
+
 status_t open_input_file(file_info_t *const info, 
                          const char *const path, 
                          const size_t checksum_length)
@@ -85,21 +92,6 @@ status_t close_input_file(file_info_t *const info)
 
 fail:
   return _status;
-}
-
-off_t file_length(const file_info_t *info)
-{
-  return info->total_length;
-}
-
-int hit_file_end(const file_info_t *const file)
-{
-  return file->total_length == file->internal_offset + file->block_offset;
-}
-
-int hit_buffer_end(const file_info_t *const info)
-{
-  return info->internal_offset >= info->buffer_use;
 }
 
 status_t populate_forwards(file_info_t *const file)
@@ -265,9 +257,4 @@ status_t write_merged_file(file_info_t *const f1_info, file_info_t *const f2_inf
 fail:
   free(buffer);
   return _status;
-}
-
-off_t characters_handled(file_info_t *const info)
-{
-  return info->block_offset + info->internal_offset;
 }

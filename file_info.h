@@ -55,15 +55,11 @@ typedef struct
 status_t open_input_file(file_info_t *info, const char *path, size_t checksum_length);
 status_t close_input_file(file_info_t *info);
 status_t seek_file(file_info_t *info, off_t offset);
-off_t file_length(const file_info_t *info);
-int hit_file_end(const file_info_t *file);
-int hit_buffer_end(const file_info_t * info);
 status_t populate_forwards(file_info_t *file);
 status_t find_checksum_match(const file_info_t *f1_info, file_info_t *f2_info, int *result);
 status_t advance_location(file_info_t *file);
 status_t validate_match(file_info_t *f1_info, file_info_t *f2_info, int *result);
 status_t write_merged_file(file_info_t *f1_info, file_info_t *f2_info, FILE *out);
-off_t characters_handled(file_info_t *info);
 status_t compute_match_info(FILE *f1, FILE *f2, match_info_t *info);
 status_t get_match_info(file_info_t *f1_info, file_info_t *f2_info, match_info_t *info);
 
@@ -80,6 +76,19 @@ static inline unsigned char get_byte(file_info_t *const info, const long offset)
     return info->prev_buffer[BUFFER_SIZE + local_offset];
 }
 
+static inline off_t file_length(const file_info_t *const info)
+{
+  return info->total_length;
+}
 
+static inline int hit_file_end(const file_info_t *const file)
+{
+  return file->total_length == file->internal_offset + file->block_offset;
+}
+
+static inline off_t characters_handled(const file_info_t *const info)
+{
+  return info->block_offset + info->internal_offset;
+}
 
 #endif

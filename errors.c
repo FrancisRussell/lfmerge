@@ -9,7 +9,9 @@ struct error_string
 
 static struct error_string error_strings[] = {
   { LF_OK,             "No error encountered." },
-  { LF_INTERNAL_ERROR, "An internal error occured. Please report." }
+  { LF_INTERNAL_ERROR, "An internal error occured. Please report." },
+  { LF_INVALID_WINDOW_SIZE, "Invalid checksum window size." },
+  { LF_INVALID_COMMAND_LINE_OPTION, "Invalid command line option." }
 };
 
 void lf_strerror(const int status, char *const buffer, const size_t buffer_length)

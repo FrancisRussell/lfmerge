@@ -42,8 +42,8 @@ status_t open_input_file(file_info_t *const info,
                          const char *const path, 
                          const size_t checksum_length)
 {
-  assert(checksum_length <= BUFFER_SIZE);
   status_t _status = LF_INTERNAL_ERROR;
+  FAIL_PRED(checksum_length > BUFFER_SIZE, LF_INVALID_WINDOW_SIZE);
   info->prev_buffer = info->buffer = NULL;
 
   FAIL_SYS((info->prev_buffer = malloc(BUFFER_SIZE)) == NULL);

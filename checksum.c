@@ -29,15 +29,25 @@
 static checksum_integer_t checksum_pow(const checksum_integer_t x, 
                                        const checksum_integer_t y)
 {
-  if (y == 0)
-    return 1;
+  assert(y >= 0);
 
-  const checksum_integer_t sub_pow = checksum_pow(x, y/2);
-  
-  if (y % 2 == 0)
-    return sub_pow * sub_pow;
+  if (y == 0)
+  {
+    return 1;
+  }
+  else if (y == 1)
+  {
+    return x;
+  }
   else
-    return sub_pow * sub_pow * x;
+  {
+    const checksum_integer_t sub_pow = checksum_pow(x, y/2);
+    
+    if (y % 2 == 0)
+      return sub_pow * sub_pow;
+    else
+      return sub_pow * sub_pow * x;
+  }
 }
 
 void init_checksum(checksum_t *const c, const size_t length)

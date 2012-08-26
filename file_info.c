@@ -207,15 +207,16 @@ status_t compute_match_info(FILE *const f1, FILE *const f2, match_info_t *const 
     const size_t read2 = fread(buffer2, 1, BUFFER_SIZE, f2);
     FAIL_SYS(read2 != BUFFER_SIZE && ferror(f2));
     const size_t length = (read1 < read2 ? read1 : read2);
- 
     info->total_bytes += length;
-    for(size_t i=0; i<length; ++i)
-    {
-      if (buffer1[i] == buffer2[i])
-        ++info->matching_bytes;
-      else
-        info->matching_bytes = 0;
-    }
+
+    long offset = length - 1;
+    while(offset >=0 && (buffer1[offset] == buffer2[offset]))
+      --offset;
+
+    if (offset == -1)
+      info->matching_bytes += length;
+    else
+      info->matching_bytes = length - offset - 1;
   }
   _status = LF_OK;
 

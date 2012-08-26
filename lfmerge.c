@@ -116,7 +116,7 @@ int main(const int argc, char **const argv)
 
   if (options.window_size <= 0 || options.window_size > BUFFER_SIZE)
   {
-    fprintf(stderr, "Overlap window size must be between 1 and %li bytes inclusive.\n", BUFFER_SIZE);
+    fprintf(stderr, "Overlap window size must be between 1 and %zi bytes inclusive.\n", BUFFER_SIZE);
     exit(EXIT_FAILURE);
   }
 

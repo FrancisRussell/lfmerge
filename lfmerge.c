@@ -68,9 +68,11 @@ static status_t parse_options(struct option_values *const options, const int arg
     {
       case 'w': 
       {
+        char *endptr;
         errno = 0;
-        const long size = strtol(optarg, NULL, 10);
+        const long size = strtol(optarg, &endptr, 10);
         FAIL_SYS(errno != 0);
+        FAIL_PRED(endptr == optarg || *endptr != '\0', LF_INVALID_COMMAND_LINE_OPTION);
         options->window_size = size;
         break;
       }

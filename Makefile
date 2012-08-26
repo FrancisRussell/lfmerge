@@ -17,6 +17,6 @@ errors.o: errors.h
 lfmerge: file_info.o checksum.o errors.o
 
 clean:
-	rm -f lfmerge checksum.o file_info.o lfmerge.o memory.o errors.o
+	rm -f lfmerge checksum.o file_info.o lfmerge.o errors.o
 
 .PHONY: clean all
